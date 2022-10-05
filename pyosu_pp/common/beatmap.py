@@ -4,6 +4,12 @@ from dataclasses import dataclass
 import hashlib
 from typing import Any, Mapping
 from typing import Optional
+from pyosu_pp.models.background import Background
+from pyosu_pp.models.mode import Mode
+from pyosu_pp.models.sample_set import SampleSet
+from pyosu_pp.models.overlay_position import OverlayPosition
+from pyosu_pp.models.video import Video
+from pyosu_pp.models.break_time import BreakTime
 from pyosu_pp.usecases import beatmap as beatmap_usecases
 
 VALID_SECTIONS = (
@@ -26,14 +32,14 @@ class Beatmap:
     audio_hash: str
     preview_time: int
     countdown: bool
-    sample_set: Any  # TODO: type
+    sample_set: SampleSet
     stack_leniency: float
-    mode: Any  # TODO
+    mode: Mode
     letterbox_in_breaks: bool
     story_fire_in_front: bool
     use_skin_sprites: bool
     always_show_playfield: bool
-    overlay_position: Any  # TODO: type
+    overlay_position: OverlayPosition
     skin_preference: str
     epilepsy_warning: bool
     countdown_offset: int
@@ -69,9 +75,9 @@ class Beatmap:
     slider_tick_rate: float
 
     # [Events]
-    background: Optional[Any]  # TODO: type
-    videos: list[Any]  # TODO: type
-    break_times: list[Any] # TODO: type
+    background: Optional[Background]
+    videos: list[Video]
+    break_times: list[BreakTime]
 
     # [TimingPoints]
     timing_points: list[Any]  # TODO: type
@@ -120,7 +126,7 @@ class Beatmap:
             audio_hash=mapping["general"]["AudioHash"],
             preview_time=mapping["general"]["PreviewTime"],
             countdown=mapping["general"]["Countdown"],
-            sample_set=mapping["general"]["SampleSet"],
+            sample_set=mapping["general"].get("SampleSet", SampleSet.NONE),
             stack_leniency=mapping["general"]["StackLeniency"],
             mode=mapping["general"]["Mode"],
             letterbox_in_breaks=mapping["general"]["LetterboxInBreaks"],
@@ -155,6 +161,9 @@ class Beatmap:
             ar=mapping["difficulty"]["ApproachRate"],
             slider_multiplier=mapping["difficulty"]["SliderMultiplier"],
             slider_tick_rate=mapping["difficulty"]["SliderTickRate"],
+            background=mapping["events"]["Background"],
+            videos=mapping["events"]["Videos"],
+            break_times=mapping["events"]["BreakTimes"],
             ... # TODO: finish
         )
 
@@ -176,6 +185,7 @@ class Beatmap:
         # some pre-defined sections
         beatmap_data["events"]["Videos"] = []
         beatmap_data["events"]["BreakTimes"] = []
+        beatmap_data["timingpoints"]["TimingPoints"] = []
         beatmap_data["misc"] = {"file_version": file_version, "file_hash": file_hash}
 
         current_section: str = ""
@@ -200,6 +210,8 @@ class Beatmap:
                     beatmap_data[current_section]["Videos"].append(line_data.pop("Video"))
                 elif "BreakTime" in line_data:
                     beatmap_data[current_section]["BreakTimes"].append(line_data.pop("BreakTime"))
+                elif "TimingPoint" in line_data:
+                    beatmap_data[current_section]["TimingPoints"].append(line_data.pop("TimingPoint"))
 
                 beatmap_data[current_section] |= line_data
 
